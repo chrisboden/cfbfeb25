@@ -24,8 +24,8 @@ A modern, AI-enhanced todo list application that uses natural language processin
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ai-todo-list.git
-   cd ai-todo-list
+   git clone https://github.com/chrisboden/cfbfeb25.git
+   cd cfbfeb25
    ```
 
 2. Install dependencies:
