@@ -2,7 +2,7 @@
 
 A modern, AI-enhanced todo list application that uses natural language processing to understand and organize your tasks. Built for the Peregian Digital Hub to demonstrate practical AI integration in web applications.
 
-![App Screenshot](docs/screenshot.png)
+![App Screenshot](docs/app_screenshot.jpg)
 
 ## Features
 
