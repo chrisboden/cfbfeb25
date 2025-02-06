@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const taskForm = document.getElementById('taskForm');
     const taskInput = document.getElementById('taskInput');
-    const taskCategory = document.getElementById('taskCategory');
     const tasksList = document.getElementById('tasksList');
     const taskTemplate = document.getElementById('taskTemplate');
     const aiResponse = document.getElementById('aiResponse');
@@ -16,38 +15,79 @@ document.addEventListener('DOMContentLoaded', () => {
         'Other': 'bi-three-dots'
     };
 
+    // Load tasks from backend
+    async function loadTasks() {
+        try {
+            const response = await fetch('/api/tasks');
+            const data = await response.json();
+            
+            // Clear existing tasks
+            tasksList.innerHTML = '';
+            
+            // Sort tasks: pending first, then by date
+            const tasks = data.tasks || [];
+            tasks.sort((a, b) => {
+                // First by status (pending before completed)
+                if (a.status !== b.status) {
+                    return a.status === 'pending' ? -1 : 1;
+                }
+                // Then by due date (if exists)
+                const dateA = a.due_date ? new Date(a.due_date) : new Date(a.created_at);
+                const dateB = b.due_date ? new Date(b.due_date) : new Date(b.created_at);
+                return dateA - dateB;
+            });
+            
+            // Add each task to UI
+            tasks.forEach(task => addTaskToUI(task));
+            
+            // Update counts
+            updateTaskCounts();
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            alert('Failed to load tasks. Please refresh the page.');
+        }
+    }
+
     // Update task counts
     function updateTaskCounts() {
         fetch('/api/tasks')
             .then(response => response.json())
             .then(data => {
                 const tasks = data.tasks || [];
-                const personalCount = tasks.filter(t => t.category === 'Personal').length;
-                const businessCount = tasks.filter(t => t.category === 'Business').length;
+                const activeTasks = tasks.filter(t => t.status === 'pending');
                 
-                document.querySelector('.task-counts .task-count:first-child').textContent = personalCount;
-                document.querySelector('.task-counts .task-count:last-child').textContent = businessCount;
+                // Count tasks for each category
+                const counts = {
+                    'Personal': 0,
+                    'Business': 0,
+                    'Shopping': 0,
+                    'Health': 0
+                };
+                
+                // Count active tasks by category
+                activeTasks.forEach(task => {
+                    if (counts.hasOwnProperty(task.category)) {
+                        counts[task.category]++;
+                    }
+                });
+                
+                // Update all category counts in the header
+                Object.entries(counts).forEach(([category, count], index) => {
+                    const countEl = document.querySelector(`.task-counts .task-count:nth-child(${index + 1})`);
+                    if (countEl) countEl.textContent = count;
+                });
                 
                 // Update progress bar
                 const total = tasks.length;
                 const completed = tasks.filter(t => t.status === 'completed').length;
                 const progress = total > 0 ? (completed / total) * 100 : 0;
-                document.querySelector('.progress-bar-fill').style.width = `${progress}%`;
-            });
-    }
-
-    // Load existing tasks
-    function loadTasks() {
-        fetch('/api/tasks')
-            .then(response => response.json())
-            .then(data => {
-                tasksList.innerHTML = '';
-                (data.tasks || []).forEach(task => addTaskToUI(task));
-                updateTaskCounts();
+                const progressBar = document.querySelector('.progress-bar-fill');
+                if (progressBar) progressBar.style.width = `${progress}%`;
+                
+                console.log('Task counts:', counts, `Total: ${total}, Completed: ${completed}`);
             })
             .catch(error => {
-                console.error('Error loading tasks:', error);
-                alert('Failed to load tasks. Please refresh the page.');
+                console.error('Error updating task counts:', error);
             });
     }
 
@@ -55,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
     taskForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const rawText = taskInput.value.trim();
-        const category = taskCategory.value;
         
         if (!rawText) return;
 
@@ -68,8 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    raw_text: rawText,
-                    category: category
+                    raw_text: rawText
                 })
             });
 
@@ -93,13 +131,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle task deletion
+    // Handle task actions (complete/delete)
     tasksList.addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-task');
-        if (deleteBtn) {
-            const taskElement = e.target.closest('.task-item');
-            const taskId = taskElement.dataset.taskId;
+        const taskElement = e.target.closest('.task-item');
+        if (!taskElement) return;
+        
+        const taskId = taskElement.dataset.taskId;
+        
+        // Handle completion toggle
+        if (e.target.closest('.toggle-task')) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/toggle`, {
+                    method: 'POST'
+                });
 
+                if (!response.ok) {
+                    throw new Error('Failed to update task');
+                }
+
+                const updatedTask = await response.json();
+                updateTaskElement(taskElement, updatedTask);
+                updateTaskCounts();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to update task. Please try again.');
+            }
+        }
+        
+        // Handle deletion
+        if (e.target.closest('.delete-task')) {
+            if (!confirm('Are you sure you want to delete this task?')) return;
+            
             try {
                 const response = await fetch(`/api/tasks/${taskId}`, {
                     method: 'DELETE'
@@ -121,23 +183,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add a task to the UI
     function addTaskToUI(task) {
         const taskElement = document.importNode(taskTemplate.content, true).firstElementChild;
-        
-        taskElement.dataset.taskId = task.id;
-        taskElement.querySelector('.task-content').textContent = task.content;
+        updateTaskElement(taskElement, task);
+        tasksList.insertBefore(taskElement, tasksList.firstChild);
+    }
+
+    // Update an existing task element
+    function updateTaskElement(element, task) {
+        element.dataset.taskId = task.id;
+        element.querySelector('.task-content').textContent = task.content;
         
         // Set task icon
-        const iconElement = taskElement.querySelector('.task-icon i');
+        const iconElement = element.querySelector('.task-icon i');
         iconElement.className = `bi ${categoryIcons[task.category] || categoryIcons.Other}`;
         
         // Format date nicely
         const dueDate = task.due_date ? new Date(task.due_date) : null;
         const dateText = dueDate ? formatDate(dueDate) : 'No due date';
-        taskElement.querySelector('.task-due-date').textContent = dateText;
+        element.querySelector('.task-due-date').textContent = dateText;
         
-        taskElement.querySelector('.task-category').textContent = task.category || 'Uncategorized';
-        taskElement.querySelector('.task-duration').textContent = task.estimated_duration || '--';
+        element.querySelector('.task-category').textContent = task.category || 'Uncategorized';
+        element.querySelector('.task-duration').textContent = task.estimated_duration || '--';
         
-        tasksList.insertBefore(taskElement, tasksList.firstChild);
+        // Update completion status
+        const toggleBtn = element.querySelector('.toggle-task');
+        if (task.status === 'completed') {
+            element.classList.add('completed');
+            toggleBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+        } else {
+            element.classList.remove('completed');
+            toggleBtn.innerHTML = '<i class="bi bi-circle"></i>';
+        }
     }
 
     // Format date in a user-friendly way
@@ -160,6 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Initial load
+    // Load tasks and initialize
     loadTasks();
 }); 

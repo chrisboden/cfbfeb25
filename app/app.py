@@ -85,7 +85,9 @@ def create_task():
             "priority": parsed_data['priority'],
             "estimated_duration": parsed_data.get('estimated_duration'),
             "status": "pending",
-            "created_at": datetime.now().isoformat()
+            "completed_at": None,
+            "created_at": datetime.now().isoformat(),
+            "ai_analysis": parsed_data.get('analysis', {})
         }
         
         tasks_data['tasks'].append(new_task)
@@ -101,7 +103,7 @@ def create_task():
 
 @app.route('/api/tasks/<task_id>', methods=['DELETE'])
 def delete_task(task_id):
-    """Delete a task"""
+    """Delete a task permanently"""
     try:
         tasks_data = load_tasks()
         tasks_data['tasks'] = [t for t in tasks_data['tasks'] if t['id'] != task_id]
@@ -112,6 +114,36 @@ def delete_task(task_id):
     
     except Exception as e:
         error_msg = f"Failed to delete task: {str(e)}"
+        print(colored(f"[ERROR] {error_msg}", "red"))
+        return jsonify({"error": error_msg}), 400
+
+@app.route('/api/tasks/<task_id>/toggle', methods=['POST'])
+def toggle_task_status(task_id):
+    """Toggle task completion status"""
+    try:
+        tasks_data = load_tasks()
+        task = next((t for t in tasks_data['tasks'] if t['id'] == task_id), None)
+        
+        if not task:
+            return jsonify({"error": "Task not found"}), 404
+        
+        # Toggle status
+        if task['status'] == 'completed':
+            task['status'] = 'pending'
+            task['completed_at'] = None
+        else:
+            task['status'] = 'completed'
+            task['completed_at'] = datetime.now().isoformat()
+        
+        save_tasks(tasks_data)
+        
+        status_text = "completed" if task['status'] == 'completed' else "reopened"
+        print(colored(f"[INFO] Task {status_text}: {task['content']}", "green"))
+        
+        return jsonify(task), 200
+    
+    except Exception as e:
+        error_msg = f"Failed to update task: {str(e)}"
         print(colored(f"[ERROR] {error_msg}", "red"))
         return jsonify({"error": error_msg}), 400
 

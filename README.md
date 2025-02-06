@@ -17,7 +17,7 @@ A modern, AI-enhanced todo list application that uses natural language processin
 
 - Frontend: HTML, CSS, JavaScript, Bootstrap 5
 - Backend: Python, Flask
-- AI: OpenRouter API with Mistral-7B
+- AI: OpenRouter API with openai/gpt-4o-mini
 - Storage: JSON (with planned SQLite upgrade)
 
 ## Setup

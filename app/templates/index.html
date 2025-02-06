@@ -139,6 +139,33 @@
             border-radius: 0.5rem;
             width: 100%;
         }
+        
+        .task-item.completed .task-content {
+            text-decoration: line-through;
+            color: #999;
+        }
+        
+        .task-item.completed .task-icon {
+            opacity: 0.6;
+        }
+        
+        .toggle-task {
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            color: var(--primary-color);
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .toggle-task:hover {
+            opacity: 1;
+        }
+        
+        .task-item.completed .toggle-task {
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -152,12 +179,20 @@
         </div>
         <div class="task-counts">
             <div>
-                <div class="task-count">24</div>
+                <div class="task-count">0</div>
                 <div class="task-type">Personal</div>
             </div>
             <div>
-                <div class="task-count">15</div>
+                <div class="task-count">0</div>
                 <div class="task-type">Business</div>
+            </div>
+            <div>
+                <div class="task-count">0</div>
+                <div class="task-type">Shopping</div>
+            </div>
+            <div>
+                <div class="task-count">0</div>
+                <div class="task-type">Health</div>
             </div>
         </div>
         <div class="progress-bar">
@@ -197,14 +232,10 @@
                 <div class="modal-body">
                     <form id="taskForm">
                         <div class="mb-3">
-                            <select class="form-select mb-3" id="taskCategory">
-                                <option value="Business">Business</option>
-                                <option value="Personal">Personal</option>
-                                <option value="Shopping">Shopping</option>
-                                <option value="Health">Health</option>
-                            </select>
-                            <input type="text" class="form-control" id="taskInput" 
-                                   placeholder="What do you need to do?" required>
+                            <textarea class="form-control" id="taskInput" 
+                                   rows="3"
+                                   placeholder="What do you need to do? (e.g., 'Buy flowers for my daughter on Valentine's day')" 
+                                   required></textarea>
                         </div>
                         <div id="aiResponse" class="d-none alert alert-info">
                             <div class="spinner-border spinner-border-sm" role="status">
@@ -222,6 +253,9 @@
     <!-- Task Template -->
     <template id="taskTemplate">
         <div class="task-item">
+            <button class="toggle-task">
+                <i class="bi bi-circle"></i>
+            </button>
             <div class="task-icon">
                 <i class="bi"></i>
             </div>

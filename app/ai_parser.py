@@ -56,20 +56,45 @@ def parse_task(raw_text):
     try:
         print(colored(f"[AI] Parsing task: {raw_text}", "blue"))
         
-        # First try to extract date directly
-        due_date = parse_date(raw_text)
+        current_time = datetime.now()
         
         # Prompt for the LLM
-        prompt = f"""Parse the following task and extract structured information:
+        prompt = f"""Current timestamp: {current_time.isoformat()}
+
+Analyze this task and extract structured information:
 Task: "{raw_text}"
 
-Return a JSON object with these fields:
-- content: The main task description (without date/time information)
-- category: One of [Work, Personal, Shopping, Health, Other]
-- priority: 1 (low) to 3 (high) based on urgency
-- estimated_duration: estimated minutes to complete
+Rules:
+1. Remove any date/time information from the content
+2. Extract date and time if specified:
+   - Use ISO format (YYYY-MM-DDTHH:MM:SS)
+   - For relative dates (tomorrow, next week), calculate from current timestamp
+   - For recurring dates (Valentine's Day), use next occurrence
+   - For times without dates, assume nearest future occurrence
+3. Categorize based on task nature:
+   - Business: work, meetings, calls, deadlines, projects
+   - Shopping: buying, purchasing, groceries, items
+   - Health: exercise, medical, wellness, fitness
+   - Personal: everything else
+4. Set priority (1-3):
+   - 3: Urgent/Important
+   - 2: Important but not urgent
+   - 1: Regular task
+5. Estimate duration in minutes
 
-Only return the JSON, no other text."""
+Output in exactly this format (replace text in <>):
+{{
+    "content": "<task without date/time>",
+    "due_date": "<ISO datetime or null>",
+    "category": "<Business|Shopping|Health|Personal>",
+    "priority": <1|2|3>,
+    "estimated_duration": <minutes>,
+    "analysis": {{
+        "date_factors": ["<reason for date/time selection>"],
+        "urgency_factors": ["<reason for priority>"],
+        "category_factors": ["<reason for category>"]
+    }}
+}}"""
 
         # Call OpenRouter API
         headers = {
@@ -79,12 +104,16 @@ Only return the JSON, no other text."""
         }
         
         data = {
-            'model': 'mistralai/mistral-7b-instruct',
+            'model': 'openai/gpt-4o-mini',
             'messages': [
-                {'role': 'system', 'content': 'You are a task parsing assistant. You extract structured data from natural language task descriptions.'},
+                {
+                    'role': 'system', 
+                    'content': f'You are a task parsing assistant that extracts structured data from natural language task descriptions. Always return valid JSON matching the exact schema requested. Current time is {current_time.isoformat()}.'
+                },
                 {'role': 'user', 'content': prompt}
             ],
-            'temperature': 0.1
+            'temperature': 0.1,
+            'response_format': { 'type': 'json_object' }
         }
         
         response = requests.post(
@@ -102,8 +131,11 @@ Only return the JSON, no other text."""
         parsed_text = result['choices'][0]['message']['content']
         parsed_data = json.loads(parsed_text)
         
-        # Add the parsed date
-        parsed_data['due_date'] = due_date.isoformat() if due_date else None
+        # If LLM provided a date, use it; otherwise try our date parser
+        if not parsed_data.get('due_date'):
+            extracted_date = parse_date(raw_text)
+            if extracted_date:
+                parsed_data['due_date'] = extracted_date.isoformat()
         
         print(colored(f"[AI] Parsed result: {json.dumps(parsed_data, indent=2)}", "green"))
         return parsed_data
