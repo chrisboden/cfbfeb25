@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Things</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4355b9;
+            --secondary-color: #64b5f6;
+            --background-color: #f5f7fa;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        .header {
+            background: linear-gradient(rgba(67, 85, 185, 0.9), rgba(67, 85, 185, 0.8)), 
+                        url('/static/images/kalen-emsley-Bkci_8qcdvQ-unsplash.jpg');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 2rem 1.5rem;
+            border-radius: 0 0 1rem 1rem;
+        }
+        
+        .task-counts {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .task-count {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .task-type {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+        
+        .progress-bar {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            margin-top: 1rem;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--secondary-color);
+            width: 65%;
+        }
+        
+        .content-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-top: -1rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .task-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--background-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .task-details h6 {
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .task-details small {
+            color: #666;
+        }
+        
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .fab:hover {
+            transform: scale(1.05);
+        }
+        
+        .modal-content {
+            border-radius: 1rem;
+        }
+        
+        .modal-header {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 1rem 1rem 0 0;
+            padding: 1.5rem;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .btn-add {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="mb-0">Your Things</h1>
+            <button class="btn text-white" type="button">
+                <i class="bi bi-three-dots"></i>
+            </button>
+        </div>
+        <div class="task-counts">
+            <div>
+                <div class="task-count">24</div>
+                <div class="task-type">Personal</div>
+            </div>
+            <div>
+                <div class="task-count">15</div>
+                <div class="task-type">Business</div>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container py-4">
+        <div class="content-card">
+            <div class="p-3">
+                <h6 class="text-muted mb-0">INBOX</h6>
+            </div>
+            <div id="tasksList">
+                <!-- Tasks will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+        <i class="bi bi-plus"></i>
+    </button>
+
+    <!-- Add Task Modal -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen-md-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex w-100 align-items-center">
+                        <button type="button" class="btn text-white" data-bs-dismiss="modal">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 mb-0">Add new thing</h5>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <div class="mb-3">
+                            <select class="form-select mb-3" id="taskCategory">
+                                <option value="Business">Business</option>
+                                <option value="Personal">Personal</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Health">Health</option>
+                            </select>
+                            <input type="text" class="form-control" id="taskInput" 
+                                   placeholder="What do you need to do?" required>
+                        </div>
+                        <div id="aiResponse" class="d-none alert alert-info">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span class="ms-2">AI is processing your task...</span>
+                        </div>
+                        <button type="submit" class="btn-add">ADD YOUR THING</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Template -->
+    <template id="taskTemplate">
+        <div class="task-item">
+            <div class="task-icon">
+                <i class="bi"></i>
+            </div>
+            <div class="task-details flex-grow-1">
+                <h6 class="task-content"></h6>
+                <small>
+                    <span class="task-due-date"></span>
+                    <span class="ms-2 task-category"></span>
+                    <span class="ms-2">Est: <span class="task-duration"></span> min</span>
+                </small>
+            </div>
+            <button class="btn btn-link text-danger delete-task">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 
