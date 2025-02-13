@@ -72,9 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 // Update all category counts in the header
-                Object.entries(counts).forEach(([category, count], index) => {
-                    const countEl = document.querySelector(`.task-counts .task-count:nth-child(${index + 1})`);
-                    if (countEl) countEl.textContent = count;
+                const taskCountElements = document.querySelectorAll('.task-counts > div');
+                taskCountElements.forEach(div => {
+                    const category = div.querySelector('.task-type').textContent;
+                    const countElement = div.querySelector('.task-count');
+                    if (countElement && counts.hasOwnProperty(category)) {
+                        countElement.textContent = counts[category];
+                    }
                 });
                 
                 // Update progress bar
@@ -83,8 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const progress = total > 0 ? (completed / total) * 100 : 0;
                 const progressBar = document.querySelector('.progress-bar-fill');
                 if (progressBar) progressBar.style.width = `${progress}%`;
-                
-                console.log('Task counts:', counts, `Total: ${total}, Completed: ${completed}`);
             })
             .catch(error => {
                 console.error('Error updating task counts:', error);
